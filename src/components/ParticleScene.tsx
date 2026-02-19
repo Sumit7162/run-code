@@ -1,92 +1,95 @@
-import { useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-
-function Particles() {
-  const meshRef = useRef<THREE.Points>(null);
-  const count = 800;
-
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
-    }
-    return pos;
-  }, []);
-
-  const colors = useMemo(() => {
-    const col = new Float32Array(count * 3);
-    const cyan = new THREE.Color("hsl(175, 80%, 50%)");
-    const green = new THREE.Color("hsl(145, 70%, 50%)");
-    for (let i = 0; i < count; i++) {
-      const c = Math.random() > 0.5 ? cyan : green;
-      col[i * 3] = c.r;
-      col[i * 3 + 1] = c.g;
-      col[i * 3 + 2] = c.b;
-    }
-    return col;
-  }, []);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.03;
-      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.02) * 0.1;
-    }
-  });
-
-  return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial size={0.04} vertexColors transparent opacity={0.7} sizeAttenuation />
-    </points>
-  );
-}
-
-function FloatingGrid() {
-  const ref = useRef<THREE.LineSegments>(null);
-
-  const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
-    const vertices: number[] = [];
-    const gridSize = 20;
-    const divisions = 20;
-    const step = gridSize / divisions;
-    const half = gridSize / 2;
-    for (let i = 0; i <= divisions; i++) {
-      const pos = -half + i * step;
-      vertices.push(pos, 0, -half, pos, 0, half);
-      vertices.push(-half, 0, pos, half, 0, pos);
-    }
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-    return geo;
-  }, []);
-
-  useFrame((state) => {
-    if (ref.current) {
-      ref.current.position.y = -4 + Math.sin(state.clock.elapsedTime * 0.3) * 0.3;
-    }
-  });
-
-  return (
-    <lineSegments ref={ref} geometry={geometry}>
-      <lineBasicMaterial color="hsl(175, 80%, 30%)" transparent opacity={0.15} />
-    </lineSegments>
-  );
-}
+import { useRef, useEffect } from "react";
 
 export default function ParticleScene() {
-  return (
-    <div className="fixed inset-0 -z-10">
-      <Canvas camera={{ position: [0, 2, 8], fov: 60 }}>
-        <ambientLight intensity={0.3} />
-        <Particles />
-        <FloatingGrid />
-      </Canvas>
-    </div>
-  );
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationId: number;
+    const particles: { x: number; y: number; vx: number; vy: number; size: number; color: string }[] = [];
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Create particles
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2 + 1,
+        color: Math.random() > 0.5 ? "rgba(45, 212, 191, 0.7)" : "rgba(74, 222, 128, 0.5)",
+      });
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw grid
+      ctx.strokeStyle = "rgba(45, 212, 191, 0.06)";
+      ctx.lineWidth = 1;
+      const gridSize = 60;
+      for (let x = 0; x < canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.strokeStyle = `rgba(45, 212, 191, ${0.15 * (1 - dist / 120)})`;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw & update particles
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+      }
+
+      animationId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 -z-10" />;
 }
