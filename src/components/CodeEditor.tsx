@@ -1,88 +1,62 @@
 import { useState } from "react";
 import Editor from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Terminal, Copy, Check } from "lucide-react";
+import { Play, Terminal, Copy, Check, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-type Language = "python" | "cpp" | "java";
-
-const DEFAULTS: Record<Language, string> = {
-  python: `# Python Code Runner
-def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n - 1) + fibonacci(n - 2)
-
-for i in range(10):
-    print(f"fib({i}) = {fibonacci(i)}")
-`,
-  cpp: `// C++ Code Runner
-#include <iostream>
+const DEFAULT_CODE = `#include <iostream>
 using namespace std;
 
-int fibonacci(int n) {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
 int main() {
-    for (int i = 0; i < 10; i++) {
-        cout << "fib(" << i << ") = " << fibonacci(i) << endl;
+    cout << "Hello, World!" << endl;
+
+    // Try writing your own C++ code!
+    for (int i = 1; i <= 5; i++) {
+        cout << "Count: " << i << endl;
     }
+
     return 0;
 }
-`,
-  java: `// Java Code Runner
-public class Main {
-    static int fibonacci(int n) {
-        if (n <= 1) return n;
-        return fibonacci(n - 1) + fibonacci(n - 2);
-    }
-
-    public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
-            System.out.println("fib(" + i + ") = " + fibonacci(i));
-        }
-    }
-}
-`,
-};
-
-const MOCK_OUTPUT: Record<Language, string> = {
-  python: `fib(0) = 0\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34`,
-  cpp: `fib(0) = 0\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34`,
-  java: `fib(0) = 0\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34`,
-};
-
-const LANG_MAP: Record<Language, string> = {
-  python: "python",
-  cpp: "cpp",
-  java: "java",
-};
-
-const LANG_COLORS: Record<Language, string> = {
-  python: "text-code-accent",
-  cpp: "text-primary",
-  java: "text-accent",
-};
+`;
 
 export default function CodeEditor() {
-  const [language, setLanguage] = useState<Language>("python");
-  const [code, setCode] = useState<Record<Language, string>>(DEFAULTS);
+  const [code, setCode] = useState(DEFAULT_CODE);
   const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleRun = () => {
+  const handleRun = async () => {
     setRunning(true);
     setOutput("");
-    setTimeout(() => {
-      setOutput(MOCK_OUTPUT[language]);
+    setError("");
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
+        body: { code },
+      });
+
+      if (fnError) {
+        setError(`Error: ${fnError.message}`);
+      } else if (data.compileError) {
+        setError(data.compileError);
+      } else if (data.runtimeError && !data.output) {
+        setError(data.runtimeError);
+      } else {
+        setOutput(data.output || "(no output)");
+        if (data.runtimeError) {
+          setOutput((prev) => prev + "\n⚠️ " + data.runtimeError);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to execute code");
+    } finally {
       setRunning(false);
-    }, 1200);
+    }
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code[language]);
+    navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -90,21 +64,12 @@ export default function CodeEditor() {
   return (
     <div className="flex flex-col h-full glass rounded-xl overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center justify-between border-b border-border px-2 py-1">
-        <div className="flex gap-1">
-          {(["python", "cpp", "java"] as Language[]).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setLanguage(lang)}
-              className={`px-4 py-2 text-sm font-mono rounded-t-md transition-all ${
-                language === lang
-                  ? `bg-secondary ${LANG_COLORS[lang]} border-b-2 border-primary`
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {lang === "cpp" ? "C++" : lang === "java" ? "Java" : "Python"}
-            </button>
-          ))}
+      <div className="flex items-center justify-between border-b border-border px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span className="px-4 py-2 text-sm font-mono bg-secondary text-primary border-b-2 border-primary rounded-t-md">
+            C++
+          </span>
+          <span className="text-xs text-muted-foreground font-mono">Write & run any C++ code</span>
         </div>
         <div className="flex gap-2">
           <button
@@ -120,7 +85,7 @@ export default function CodeEditor() {
             className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:opacity-90 transition-opacity disabled:opacity-50 glow-primary"
           >
             <Play className="w-4 h-4" />
-            {running ? "Running..." : "Run"}
+            {running ? "Compiling..." : "Run"}
           </button>
         </div>
       </div>
@@ -129,9 +94,9 @@ export default function CodeEditor() {
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
-          language={LANG_MAP[language]}
-          value={code[language]}
-          onChange={(val) => setCode((prev) => ({ ...prev, [language]: val || "" }))}
+          language="cpp"
+          value={code}
+          onChange={(val) => setCode(val || "")}
           theme="vs-dark"
           options={{
             fontSize: 14,
@@ -148,7 +113,7 @@ export default function CodeEditor() {
 
       {/* Output */}
       <AnimatePresence>
-        {(output || running) && (
+        {(output || error || running) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -156,14 +121,20 @@ export default function CodeEditor() {
             className="border-t border-border"
           >
             <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50">
-              <Terminal className="w-4 h-4 text-primary" />
-              <span className="text-xs font-mono text-muted-foreground">Output</span>
+              {error ? (
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+              ) : (
+                <Terminal className="w-4 h-4 text-primary" />
+              )}
+              <span className="text-xs font-mono text-muted-foreground">
+                {error ? "Compilation Error" : "Output"}
+              </span>
             </div>
-            <pre className="px-4 py-3 font-mono text-sm text-accent max-h-40 overflow-auto bg-code-bg">
+            <pre className={`px-4 py-3 font-mono text-sm max-h-48 overflow-auto bg-code-bg ${error ? "text-destructive" : "text-accent"}`}>
               {running ? (
                 <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
               ) : (
-                output
+                error || output
               )}
             </pre>
           </motion.div>
