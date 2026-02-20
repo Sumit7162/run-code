@@ -31,7 +31,7 @@ export default function GroupChat() {
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("messages")
-        .select("*, profiles!messages_user_id_fkey(username, avatar_emoji)")
+        .select("*, profiles!messages_profile_user_id_fkey(username, avatar_emoji)")
         .order("created_at", { ascending: true })
         .limit(100);
       if (data) setMessages(data as any);
