@@ -20,17 +20,15 @@ serve(async (req) => {
       });
     }
 
-    // Use Piston API (free, no key needed) to execute C++ code
-    const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+    // Use Wandbox API to compile and run C++ code
+    const response = await fetch("https://wandbox.org/api/compile.json", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        language: "cpp",
-        version: "10.2.0",
-        files: [{ name: "main.cpp", content: code }],
-        stdin: "",
-        compile_timeout: 10000,
-        run_timeout: 5000,
+        code,
+        compiler: "gcc-head",
+        options: "warning,gnu++2b",
+        "compiler-option-raw": "-O2",
       }),
     });
 
@@ -44,18 +42,22 @@ serve(async (req) => {
 
     const result = await response.json();
 
-    const output = result.run?.output || "";
-    const compileError = result.compile?.stderr || "";
-    const runtimeError = result.run?.stderr || "";
-    const exitCode = result.run?.code ?? 0;
+    const output = result.program_output || "";
+    const compileError = result.compiler_error || "";
+    const compilerMessage = result.compiler_message || "";
+    const programError = result.program_error || "";
+    const status = result.status || "0";
+
+    // Determine if there was a compilation failure
+    const hasCompileError = compileError && !output && status !== "0";
 
     return new Response(
       JSON.stringify({
-        output,
-        compileError,
-        runtimeError,
-        exitCode,
-        success: !compileError && exitCode === 0,
+        output: output || (hasCompileError ? "" : "(no output)"),
+        compileError: hasCompileError ? (compileError || compilerMessage) : "",
+        runtimeError: programError,
+        exitCode: parseInt(status),
+        success: !hasCompileError && status === "0",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
