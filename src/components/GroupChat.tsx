@@ -20,7 +20,7 @@ export default function GroupChat() {
   const [input, setInput] = useState("");
   const [codeMode, setCodeMode] = useState(false);
   const [codeInput, setCodeInput] = useState("");
-  const [codeLang, setCodeLang] = useState("python");
+  const [codeLang, setCodeLang] = useState("cpp");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
