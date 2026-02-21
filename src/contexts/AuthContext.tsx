@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   profile: { username: string; avatar_emoji: string } | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string, avatar?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
