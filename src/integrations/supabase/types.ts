@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      direct_messages: {
+        Row: {
+          code_content: string | null
+          code_language: string | null
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          text: string | null
+        }
+        Insert: {
+          code_content?: string | null
+          code_language?: string | null
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          text?: string | null
+        }
+        Update: {
+          code_content?: string | null
+          code_language?: string | null
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          text?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           code_content: string | null
