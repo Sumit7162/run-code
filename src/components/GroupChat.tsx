@@ -20,7 +20,7 @@ export default function GroupChat() {
   const [input, setInput] = useState("");
   const [codeMode, setCodeMode] = useState(false);
   const [codeInput, setCodeInput] = useState("");
-  const [codeLang, setCodeLang] = useState("python");
+  const [codeLang, setCodeLang] = useState("cpp");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -200,11 +200,7 @@ export default function GroupChat() {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border">
             <div className="flex items-center gap-2 px-4 py-2 bg-secondary/30">
               <Code className="w-4 h-4 text-primary" />
-              <select value={codeLang} onChange={(e) => setCodeLang(e.target.value)} className="bg-secondary text-foreground text-xs font-mono rounded px-2 py-1 border border-border">
-                <option value="python">Python</option>
-                <option value="cpp">C++</option>
-                <option value="java">Java</option>
-              </select>
+              <span className="text-xs font-mono text-foreground">C++</span>
             </div>
             <textarea
               value={codeInput}
