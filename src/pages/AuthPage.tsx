@@ -3,12 +3,14 @@ import { motion } from "framer-motion";
 import { Zap, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import AvatarPicker from "@/components/AvatarPicker";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [avatar, setAvatar] = useState("🧑‍💻");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -21,7 +23,7 @@ export default function AuthPage() {
     try {
       if (isSignUp) {
         if (!username.trim()) throw new Error("Username is required");
-        await signUp(email, password, username.trim());
+        await signUp(email, password, username.trim(), avatar);
       } else {
         await signIn(email, password);
       }
@@ -52,13 +54,19 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
-                className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg px-4 py-3 text-sm font-mono outline-none focus:ring-1 focus:ring-primary"
-              />
+              <>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Username"
+                  className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg px-4 py-3 text-sm font-mono outline-none focus:ring-1 focus:ring-primary"
+                />
+                <div>
+                  <label className="text-xs font-mono text-muted-foreground mb-2 block">Choose your avatar</label>
+                  <AvatarPicker selected={avatar} onSelect={setAvatar} />
+                </div>
+              </>
             )}
             <input
               type="email"

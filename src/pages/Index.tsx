@@ -4,6 +4,8 @@ import { Code2, MessageSquare, Zap, LogOut } from "lucide-react";
 import ParticleScene from "@/components/ParticleScene";
 import CodeEditor from "@/components/CodeEditor";
 import GroupChat from "@/components/GroupChat";
+import DirectChat from "@/components/DirectChat";
+import UsersSidebar from "@/components/UsersSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
@@ -12,6 +14,7 @@ type View = "editor" | "chat";
 const Index = () => {
   const [view, setView] = useState<View>("editor");
   const { user, loading, profile, signOut } = useAuth();
+  const [dmTarget, setDmTarget] = useState<{ userId: string; username: string; avatar: string } | null>(null);
 
   if (loading) {
     return (
@@ -36,7 +39,7 @@ const Index = () => {
         <div className="flex items-center gap-4">
           <nav className="flex gap-1 bg-secondary/50 rounded-lg p-1">
             <button
-              onClick={() => setView("editor")}
+              onClick={() => { setView("editor"); setDmTarget(null); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                 view === "editor" ? "bg-primary text-primary-foreground glow-primary" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -45,13 +48,13 @@ const Index = () => {
               Code Runner
             </button>
             <button
-              onClick={() => setView("chat")}
+              onClick={() => { setView("chat"); setDmTarget(null); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                 view === "chat" ? "bg-primary text-primary-foreground glow-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <MessageSquare className="w-4 h-4" />
-              Group Chat
+              Chat
             </button>
           </nav>
           <span className="text-sm font-mono text-muted-foreground hidden md:block">
@@ -65,15 +68,48 @@ const Index = () => {
 
       {/* Content */}
       <main className="relative z-10 h-[calc(100vh-65px)]">
-        <motion.div
-          key={view}
-          initial={{ opacity: 0, x: view === "editor" ? -20 : 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-          className="h-full p-4"
-        >
-          {view === "editor" ? <CodeEditor /> : <GroupChat />}
-        </motion.div>
+        {view === "editor" ? (
+          <motion.div
+            key="editor"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="h-full p-4"
+          >
+            <CodeEditor />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="h-full p-4 flex gap-4"
+          >
+            {/* Users Sidebar */}
+            <div className="w-64 flex-shrink-0 hidden md:block">
+              <UsersSidebar
+                selectedUserId={dmTarget?.userId ?? null}
+                onSelectUser={(userId, username, avatar) =>
+                  setDmTarget({ userId, username, avatar })
+                }
+              />
+            </div>
+            {/* Chat Area */}
+            <div className="flex-1 min-w-0">
+              {dmTarget ? (
+                <DirectChat
+                  targetUserId={dmTarget.userId}
+                  targetUsername={dmTarget.username}
+                  targetAvatar={dmTarget.avatar}
+                  onBack={() => setDmTarget(null)}
+                />
+              ) : (
+                <GroupChat />
+              )}
+            </div>
+          </motion.div>
+        )}
       </main>
     </div>
   );
