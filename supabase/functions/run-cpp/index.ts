@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { code } = await req.json();
+    const { code, stdin } = await req.json();
 
     if (!code || typeof code !== "string") {
       return new Response(JSON.stringify({ error: "No code provided" }), {
