@@ -133,6 +133,9 @@ export default function CodeEditor() {
             <span className="text-xs text-muted-foreground font-mono hidden sm:inline">Write & run any C++ code</span>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setShowStdin(!showStdin)} className={`p-2 transition-colors rounded-md ${showStdin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="Toggle stdin input">
+              <KeyboardIcon className="w-4 h-4" />
+            </button>
             <button onClick={() => setShowSaved(!showSaved)} className={`p-2 transition-colors rounded-md ${showSaved ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="Saved codes">
               <FolderOpen className="w-4 h-4" />
             </button>
