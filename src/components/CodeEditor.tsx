@@ -41,6 +41,7 @@ export default function CodeEditor() {
   const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
   const [saveTitle, setSaveTitle] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [waitingForInput, setWaitingForInput] = useState(false);
 
   const fetchSaved = async () => {
     if (!user) return;
