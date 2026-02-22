@@ -175,20 +175,20 @@ export default function CodeEditor() {
           )}
         </AnimatePresence>
 
-        {/* Stdin input */}
+        {/* Stdin input - auto-shown when code uses cin/scanf */}
         <AnimatePresence>
-          {showStdin && (
+          {needsInput && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-b border-border">
               <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50">
-                <KeyboardIcon className="w-4 h-4 text-primary" />
-                <span className="text-xs font-mono text-muted-foreground">Standard Input (stdin)</span>
+                <Terminal className="w-4 h-4 text-primary" />
+                <span className="text-xs font-mono text-muted-foreground">Input (stdin) — your code uses cin/scanf, provide input values below</span>
               </div>
               <textarea
                 value={stdinInput}
                 onChange={(e) => setStdinInput(e.target.value)}
-                placeholder="Enter input for your program here (e.g. for cin, scanf)..."
+                placeholder="Enter input values here, one per line (e.g. 42)..."
                 className="w-full bg-code-bg text-foreground placeholder:text-muted-foreground px-4 py-3 text-sm font-mono outline-none resize-none min-h-[60px] max-h-[120px]"
-                rows={3}
+                rows={2}
               />
             </motion.div>
           )}
