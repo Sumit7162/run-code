@@ -186,7 +186,27 @@ export default function CodeEditor() {
           )}
         </AnimatePresence>
 
-        {/* Output / Interactive Input */}
+        {/* Editor */}
+        <div className="flex-1 min-h-0">
+          <Editor
+            height="100%"
+            language="cpp"
+            value={code}
+            onChange={(val) => setCode(val || "")}
+            theme="vs-dark"
+            options={{
+              fontSize: 14,
+              fontFamily: "JetBrains Mono, monospace",
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              padding: { top: 12 },
+              lineNumbers: "on",
+              renderLineHighlight: "gutter",
+              bracketPairColorization: { enabled: true },
+            }}
+          />
+        </div>
+
         <AnimatePresence>
           {(output || error || running || waitingForInput) && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border">
