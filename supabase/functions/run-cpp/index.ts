@@ -26,6 +26,7 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code,
+        stdin: stdin || "",
         compiler: "gcc-head",
         options: "warning,gnu++2b",
         "compiler-option-raw": "-O2",

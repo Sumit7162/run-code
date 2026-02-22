@@ -176,6 +176,25 @@ export default function CodeEditor() {
           )}
         </AnimatePresence>
 
+        {/* Stdin input */}
+        <AnimatePresence>
+          {showStdin && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-b border-border">
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50">
+                <KeyboardIcon className="w-4 h-4 text-primary" />
+                <span className="text-xs font-mono text-muted-foreground">Standard Input (stdin)</span>
+              </div>
+              <textarea
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                placeholder="Enter input for your program here (e.g. for cin, scanf)..."
+                className="w-full bg-code-bg text-foreground placeholder:text-muted-foreground px-4 py-3 text-sm font-mono outline-none resize-none min-h-[60px] max-h-[120px]"
+                rows={3}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Editor */}
         <div className="flex-1 min-h-0">
           <Editor
