@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Terminal, Copy, Check, AlertTriangle, Save, FolderOpen, Trash2, X } from "lucide-react";
+import { Play, Terminal, Copy, Check, AlertTriangle, Save, FolderOpen, Trash2, X, KeyboardIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -36,6 +36,8 @@ export default function CodeEditor() {
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [stdinInput, setStdinInput] = useState("");
+  const [showStdin, setShowStdin] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
   const [saveTitle, setSaveTitle] = useState("");
@@ -61,7 +63,7 @@ export default function CodeEditor() {
     setError("");
     try {
       const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
-        body: { code },
+        body: { code, stdin: stdinInput },
       });
       if (fnError) {
         setError(`Error: ${fnError.message}`);
@@ -131,6 +133,9 @@ export default function CodeEditor() {
             <span className="text-xs text-muted-foreground font-mono hidden sm:inline">Write & run any C++ code</span>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setShowStdin(!showStdin)} className={`p-2 transition-colors rounded-md ${showStdin ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="Toggle stdin input">
+              <KeyboardIcon className="w-4 h-4" />
+            </button>
             <button onClick={() => setShowSaved(!showSaved)} className={`p-2 transition-colors rounded-md ${showSaved ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="Saved codes">
               <FolderOpen className="w-4 h-4" />
             </button>
@@ -167,6 +172,25 @@ export default function CodeEditor() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stdin input */}
+        <AnimatePresence>
+          {showStdin && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-b border-border">
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50">
+                <KeyboardIcon className="w-4 h-4 text-primary" />
+                <span className="text-xs font-mono text-muted-foreground">Standard Input (stdin)</span>
+              </div>
+              <textarea
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                placeholder="Enter input for your program here (e.g. for cin, scanf)..."
+                className="w-full bg-code-bg text-foreground placeholder:text-muted-foreground px-4 py-3 text-sm font-mono outline-none resize-none min-h-[60px] max-h-[120px]"
+                rows={3}
+              />
             </motion.div>
           )}
         </AnimatePresence>

@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { code } = await req.json();
+    const { code, stdin } = await req.json();
 
     if (!code || typeof code !== "string") {
       return new Response(JSON.stringify({ error: "No code provided" }), {
@@ -26,6 +26,7 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code,
+        stdin: stdin || "",
         compiler: "gcc-head",
         options: "warning,gnu++2b",
         "compiler-option-raw": "-O2",
