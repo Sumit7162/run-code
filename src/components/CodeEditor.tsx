@@ -61,6 +61,16 @@ export default function CodeEditor() {
   const needsInput = /\b(cin\s*>>|scanf\s*\(|getline\s*\(|gets\s*\()/.test(code);
 
   const handleRun = async () => {
+    if (needsInput && !waitingForInput) {
+      // Show input prompt in output section first
+      setOutput("");
+      setError("");
+      setStdinInput("");
+      setWaitingForInput(true);
+      return;
+    }
+
+    setWaitingForInput(false);
     setRunning(true);
     setOutput("");
     setError("");
