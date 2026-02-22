@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Terminal, Copy, Check, AlertTriangle, Save, FolderOpen, Trash2, X, KeyboardIcon } from "lucide-react";
+import { Play, Terminal, Copy, Check, AlertTriangle, Save, FolderOpen, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
