@@ -36,6 +36,8 @@ export default function CodeEditor() {
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [stdinInput, setStdinInput] = useState("");
+  const [showStdin, setShowStdin] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
   const [saveTitle, setSaveTitle] = useState("");
