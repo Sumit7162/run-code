@@ -63,7 +63,7 @@ export default function CodeEditor() {
     setError("");
     try {
       const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
-        body: { code },
+        body: { code, stdin: stdinInput },
       });
       if (fnError) {
         setError(`Error: ${fnError.message}`);
