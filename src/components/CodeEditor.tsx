@@ -137,7 +137,7 @@ export default function CodeEditor() {
 
   return (
     <div className="flex h-full gap-4">
-      {/* Main editor */}
+      {/* Main editor - split layout */}
       <div className="flex flex-col flex-1 glass rounded-xl overflow-hidden">
         {/* Tab bar */}
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
@@ -186,66 +186,68 @@ export default function CodeEditor() {
           )}
         </AnimatePresence>
 
-        {/* Editor */}
-        <div className="flex-1 min-h-0">
-          <Editor
-            height="100%"
-            language="cpp"
-            value={code}
-            onChange={(val) => setCode(val || "")}
-            theme="vs-dark"
-            options={{
-              fontSize: 14,
-              fontFamily: "JetBrains Mono, monospace",
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              padding: { top: 12 },
-              lineNumbers: "on",
-              renderLineHighlight: "gutter",
-              bracketPairColorization: { enabled: true },
-            }}
-          />
-        </div>
+        {/* Split: Editor left, Output right */}
+        <div className="flex-1 flex min-h-0">
+          {/* Code Editor - Left */}
+          <div className="flex-1 min-w-0 border-r border-border">
+            <Editor
+              height="100%"
+              language="cpp"
+              value={code}
+              onChange={(val) => setCode(val || "")}
+              theme="vs-dark"
+              options={{
+                fontSize: 14,
+                fontFamily: "JetBrains Mono, monospace",
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                padding: { top: 12 },
+                lineNumbers: "on",
+                renderLineHighlight: "gutter",
+                bracketPairColorization: { enabled: true },
+              }}
+            />
+          </div>
 
-        <AnimatePresence>
-          {(output || error || running || waitingForInput) && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border">
-              <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50">
-                {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
-                <span className="text-xs font-mono text-muted-foreground">{error ? "Compilation Error" : "Output"}</span>
-              </div>
-              <div className={`px-4 py-3 font-mono text-sm max-h-48 overflow-auto bg-code-bg ${error ? "text-destructive" : "text-accent"}`}>
-                {running ? (
-                  <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
-                ) : waitingForInput ? (
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground text-xs">Your code requires input. Type values below and press Enter to run:</p>
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary select-none">{">"}</span>
-                      <textarea
-                        value={stdinInput}
-                        onChange={(e) => setStdinInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleRun();
-                          }
-                        }}
-                        placeholder="Enter input values (one per line)..."
-                        className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none resize-none font-mono text-sm min-h-[24px]"
-                        rows={2}
-                        autoFocus
-                      />
-                    </div>
-                    <p className="text-muted-foreground text-xs">Press Enter to execute • Shift+Enter for new line</p>
+          {/* Output - Right */}
+          <div className="flex-1 min-w-0 flex flex-col bg-code-bg">
+            <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50 border-b border-border">
+              {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
+              <span className="text-xs font-mono text-muted-foreground">{error ? "Compilation Error" : "Output"}</span>
+            </div>
+            <div className={`flex-1 px-4 py-3 font-mono text-sm overflow-auto ${error ? "text-destructive" : "text-accent"}`}>
+              {running ? (
+                <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
+              ) : waitingForInput ? (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs">Your code requires input. Type values below and press Enter to run:</p>
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary select-none">{">"}</span>
+                    <textarea
+                      value={stdinInput}
+                      onChange={(e) => setStdinInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleRun();
+                        }
+                      }}
+                      placeholder="Enter input values (one per line)..."
+                      className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none resize-none font-mono text-sm min-h-[24px]"
+                      rows={2}
+                      autoFocus
+                    />
                   </div>
-                ) : (
-                  <pre className="whitespace-pre-wrap">{error || output}</pre>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <p className="text-muted-foreground text-xs">Press Enter to execute • Shift+Enter for new line</p>
+                </div>
+              ) : output || error ? (
+                <pre className="whitespace-pre-wrap">{error || output}</pre>
+              ) : (
+                <span className="text-muted-foreground text-xs">Run your code to see output here...</span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Saved codes panel */}
