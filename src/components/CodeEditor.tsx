@@ -56,6 +56,9 @@ export default function CodeEditor() {
     if (showSaved) fetchSaved();
   }, [showSaved, user]);
 
+  // Detect if code uses cin/scanf/getline
+  const needsInput = /\b(cin\s*>>|scanf\s*\(|getline\s*\(|gets\s*\()/.test(code);
+
   const handleRun = async () => {
     setRunning(true);
     setOutput("");
