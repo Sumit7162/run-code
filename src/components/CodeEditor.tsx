@@ -229,23 +229,25 @@ export default function CodeEditor() {
               {running ? (
                 <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
               ) : waitingForInput ? (
-                <div>
-                  <div className="flex items-center flex-wrap">
-                    <span className="text-accent whitespace-pre">Enter input: </span>
-                    <input
-                      value={stdinInput}
-                      onChange={(e) => setStdinInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleRun();
-                        }
-                      }}
-                      className="bg-transparent text-foreground outline-none font-mono text-sm border-none caret-primary flex-1 min-w-[60px]"
-                      autoFocus
-                    />
+                <div className="flex flex-col h-full">
+                  <span className="text-accent text-xs mb-1">Enter input values (one per line):</span>
+                  <textarea
+                    value={stdinInput}
+                    onChange={(e) => setStdinInput(e.target.value)}
+                    placeholder="Type your input here..."
+                    className="flex-1 bg-secondary/30 text-foreground placeholder:text-muted-foreground outline-none font-mono text-sm rounded-md p-2 resize-none border border-border focus:border-primary caret-primary min-h-[60px]"
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-muted-foreground text-xs opacity-60">Supports multiple lines of input</p>
+                    <button
+                      onClick={handleRun}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-xs hover:opacity-90 transition-opacity glow-primary"
+                    >
+                      <Play className="w-3 h-3" />
+                      Execute
+                    </button>
                   </div>
-                  <p className="text-muted-foreground text-xs mt-2 opacity-60">Press Enter to execute</p>
                 </div>
               ) : error ? (
                 <pre className="whitespace-pre-wrap text-destructive">{error}</pre>
@@ -283,17 +285,17 @@ export default function CodeEditor() {
                 <p className="text-xs text-muted-foreground font-mono text-center py-8">No saved code yet.<br />Click 💾 to save your first!</p>
               ) : (
                 savedCodes.map((s) => (
-                  <div key={s.id} className="bg-secondary/50 rounded-lg p-3 group hover:bg-secondary transition-colors">
-                    <div className="flex items-start justify-between">
-                      <button onClick={() => handleLoad(s)} className="text-left flex-1">
+                  <div key={s.id} className="bg-secondary/50 rounded-lg p-3 hover:bg-secondary transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <button onClick={() => handleLoad(s)} className="text-left flex-1 min-w-0">
                         <h4 className="text-sm font-mono text-foreground truncate">{s.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1">
                           {new Date(s.created_at).toLocaleDateString()} · {new Date(s.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
                         <pre className="text-xs font-mono text-muted-foreground mt-2 line-clamp-3 overflow-hidden">{s.code.slice(0, 120)}...</pre>
                       </button>
-                      <button onClick={() => handleDelete(s.id)} className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all" title="Delete">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => handleDelete(s.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all flex-shrink-0" title="Delete">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
