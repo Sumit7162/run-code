@@ -8,6 +8,7 @@ import DirectChat from "@/components/DirectChat";
 import UsersSidebar from "@/components/UsersSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 type View = "editor" | "chat";
 
@@ -15,6 +16,7 @@ const Index = () => {
   const [view, setView] = useState<View>("editor");
   const { user, loading, profile, signOut } = useAuth();
   const [dmTarget, setDmTarget] = useState<{ userId: string; username: string; avatar: string } | null>(null);
+  const { unreadGroup, unreadDMs, totalUnread, markGroupSeen, markDMSeen } = useUnreadMessages();
 
   if (loading) {
     return (
@@ -25,6 +27,17 @@ const Index = () => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  const handleSelectChat = () => {
+    setView("chat");
+    setDmTarget(null);
+    markGroupSeen();
+  };
+
+  const handleSelectDM = (userId: string, username: string, avatar: string) => {
+    setDmTarget({ userId, username, avatar });
+    markDMSeen(userId);
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -48,13 +61,18 @@ const Index = () => {
               Code Runner
             </button>
             <button
-              onClick={() => { setView("chat"); setDmTarget(null); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
+              onClick={handleSelectChat}
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                 view === "chat" ? "bg-primary text-primary-foreground glow-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <MessageSquare className="w-4 h-4" />
               Chat
+              {totalUnread > 0 && view !== "chat" && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse">
+                  {totalUnread > 99 ? "99+" : totalUnread}
+                </span>
+              )}
             </button>
           </nav>
           <span className="text-sm font-mono text-muted-foreground hidden md:block">
@@ -90,9 +108,8 @@ const Index = () => {
             <div className="w-64 flex-shrink-0 hidden md:block">
               <UsersSidebar
                 selectedUserId={dmTarget?.userId ?? null}
-                onSelectUser={(userId, username, avatar) =>
-                  setDmTarget({ userId, username, avatar })
-                }
+                onSelectUser={handleSelectDM}
+                unreadDMs={unreadDMs}
               />
             </div>
             {/* Chat Area */}
@@ -102,7 +119,7 @@ const Index = () => {
                   targetUserId={dmTarget.userId}
                   targetUsername={dmTarget.username}
                   targetAvatar={dmTarget.avatar}
-                  onBack={() => setDmTarget(null)}
+                  onBack={() => { setDmTarget(null); markGroupSeen(); }}
                 />
               ) : (
                 <GroupChat />
