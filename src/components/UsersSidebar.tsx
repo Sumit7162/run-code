@@ -13,9 +13,10 @@ interface UserProfile {
 interface UsersSidebarProps {
   onSelectUser: (userId: string, username: string, avatar: string) => void;
   selectedUserId: string | null;
+  unreadDMs?: Record<string, number>;
 }
 
-export default function UsersSidebar({ onSelectUser, selectedUserId }: UsersSidebarProps) {
+export default function UsersSidebar({ onSelectUser, selectedUserId, unreadDMs = {} }: UsersSidebarProps) {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
 
@@ -51,22 +52,31 @@ export default function UsersSidebar({ onSelectUser, selectedUserId }: UsersSide
         {otherUsers.length === 0 && (
           <p className="text-xs text-muted-foreground font-mono text-center py-4">No other users yet</p>
         )}
-        {otherUsers.map((u) => (
-          <motion.button
-            key={u.user_id}
-            whileHover={{ x: 4 }}
-            onClick={() => onSelectUser(u.user_id, u.username, u.avatar_emoji)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-              selectedUserId === u.user_id
-                ? "bg-primary/15 border border-primary/30"
-                : "hover:bg-secondary/60"
-            }`}
-          >
-            <span className="text-xl">{u.avatar_emoji}</span>
-            <span className="text-sm font-mono text-foreground truncate flex-1">{u.username}</span>
-            <MessageCircle className="w-4 h-4 text-muted-foreground" />
-          </motion.button>
-        ))}
+        {otherUsers.map((u) => {
+          const unread = unreadDMs[u.user_id] || 0;
+          return (
+            <motion.button
+              key={u.user_id}
+              whileHover={{ x: 4 }}
+              onClick={() => onSelectUser(u.user_id, u.username, u.avatar_emoji)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                selectedUserId === u.user_id
+                  ? "bg-primary/15 border border-primary/30"
+                  : "hover:bg-secondary/60"
+              }`}
+            >
+              <span className="text-xl">{u.avatar_emoji}</span>
+              <span className="text-sm font-mono text-foreground truncate flex-1">{u.username}</span>
+              {unread > 0 ? (
+                <span className="min-w-[20px] h-[20px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : (
+                <MessageCircle className="w-4 h-4 text-muted-foreground" />
+              )}
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );

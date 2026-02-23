@@ -41,7 +41,6 @@ export default function CodeEditor() {
   const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
   const [saveTitle, setSaveTitle] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [waitingForInput, setWaitingForInput] = useState(false);
 
   const fetchSaved = async () => {
     if (!user) return;
@@ -57,20 +56,7 @@ export default function CodeEditor() {
     if (showSaved) fetchSaved();
   }, [showSaved, user]);
 
-  // Detect if code uses cin/scanf/getline
-  const needsInput = /\b(cin\s*>>|scanf\s*\(|getline\s*\(|gets\s*\()/.test(code);
-
   const handleRun = async () => {
-    if (needsInput && !waitingForInput) {
-      // Show input prompt in output section first
-      setOutput("");
-      setError("");
-      setStdinInput("");
-      setWaitingForInput(true);
-      return;
-    }
-
-    setWaitingForInput(false);
     setRunning(true);
     setOutput("");
     setError("");
@@ -218,37 +204,18 @@ export default function CodeEditor() {
               </div>
               {(output || error) && (
                 <button
-                  onClick={() => { setOutput(""); setError(""); setWaitingForInput(false); setStdinInput(""); }}
+                  onClick={() => { setOutput(""); setError(""); }}
                   className="px-3 py-1 text-xs font-mono border border-border rounded hover:bg-secondary transition-colors text-muted-foreground"
                 >
                   Clear
                 </button>
               )}
             </div>
+
+            {/* Output content */}
             <div className="flex-1 px-4 py-3 font-mono text-sm overflow-auto">
               {running ? (
                 <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
-              ) : waitingForInput ? (
-                <div className="flex flex-col h-full">
-                  <span className="text-accent text-xs mb-1">Enter input values (one per line):</span>
-                  <textarea
-                    value={stdinInput}
-                    onChange={(e) => setStdinInput(e.target.value)}
-                    placeholder="Type your input here..."
-                    className="flex-1 bg-secondary/30 text-foreground placeholder:text-muted-foreground outline-none font-mono text-sm rounded-md p-2 resize-none border border-border focus:border-primary caret-primary min-h-[60px]"
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-muted-foreground text-xs opacity-60">Supports multiple lines of input</p>
-                    <button
-                      onClick={handleRun}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-xs hover:opacity-90 transition-opacity glow-primary"
-                    >
-                      <Play className="w-3 h-3" />
-                      Execute
-                    </button>
-                  </div>
-                </div>
               ) : error ? (
                 <pre className="whitespace-pre-wrap text-destructive">{error}</pre>
               ) : output ? (
@@ -259,6 +226,20 @@ export default function CodeEditor() {
               ) : (
                 <span className="text-muted-foreground text-xs">Run your code to see output here...</span>
               )}
+            </div>
+
+            {/* Stdin input - always visible at bottom */}
+            <div className="border-t border-border px-3 py-2 bg-secondary/30">
+              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">
+                Standard Input (stdin)
+              </label>
+              <textarea
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                placeholder="Type input values here (one per line)... e.g.&#10;5&#10;Alice&#10;25"
+                className="w-full bg-secondary/50 text-foreground placeholder:text-muted-foreground/50 outline-none font-mono text-xs rounded p-2 resize-none border border-border focus:border-primary caret-primary"
+                rows={3}
+              />
             </div>
           </div>
         </div>
