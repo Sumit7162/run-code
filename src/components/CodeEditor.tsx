@@ -211,37 +211,49 @@ export default function CodeEditor() {
 
           {/* Output - Right */}
           <div className="flex-1 min-w-0 flex flex-col bg-code-bg">
-            <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50 border-b border-border">
-              {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
-              <span className="text-xs font-mono text-muted-foreground">{error ? "Compilation Error" : "Output"}</span>
+            <div className="flex items-center justify-between px-4 py-2 bg-secondary/50 border-b border-border">
+              <div className="flex items-center gap-2">
+                {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
+                <span className="text-xs font-mono font-bold text-foreground">Output</span>
+              </div>
+              {(output || error) && (
+                <button
+                  onClick={() => { setOutput(""); setError(""); setWaitingForInput(false); setStdinInput(""); }}
+                  className="px-3 py-1 text-xs font-mono border border-border rounded hover:bg-secondary transition-colors text-muted-foreground"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-            <div className={`flex-1 px-4 py-3 font-mono text-sm overflow-auto ${error ? "text-destructive" : "text-accent"}`}>
+            <div className="flex-1 px-4 py-3 font-mono text-sm overflow-auto">
               {running ? (
                 <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
               ) : waitingForInput ? (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground text-xs">Your code requires input. Type values below and press Enter to run:</p>
-                  <div className="flex items-start gap-2">
-                    <span className="text-primary select-none">{">"}</span>
-                    <textarea
+                <div>
+                  <div className="flex items-center flex-wrap">
+                    <span className="text-accent whitespace-pre">Enter input: </span>
+                    <input
                       value={stdinInput}
                       onChange={(e) => setStdinInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
+                        if (e.key === "Enter") {
                           e.preventDefault();
                           handleRun();
                         }
                       }}
-                      placeholder="Enter input values (one per line)..."
-                      className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none resize-none font-mono text-sm min-h-[24px]"
-                      rows={2}
+                      className="bg-transparent text-foreground outline-none font-mono text-sm border-none caret-primary flex-1 min-w-[60px]"
                       autoFocus
                     />
                   </div>
-                  <p className="text-muted-foreground text-xs">Press Enter to execute • Shift+Enter for new line</p>
+                  <p className="text-muted-foreground text-xs mt-2 opacity-60">Press Enter to execute</p>
                 </div>
-              ) : output || error ? (
-                <pre className="whitespace-pre-wrap">{error || output}</pre>
+              ) : error ? (
+                <pre className="whitespace-pre-wrap text-destructive">{error}</pre>
+              ) : output ? (
+                <>
+                  <pre className="whitespace-pre-wrap text-accent">{output}</pre>
+                  <p className="text-accent/60 mt-4 text-xs">=== Code Execution Successful ===</p>
+                </>
               ) : (
                 <span className="text-muted-foreground text-xs">Run your code to see output here...</span>
               )}
