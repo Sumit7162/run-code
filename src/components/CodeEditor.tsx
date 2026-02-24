@@ -180,7 +180,7 @@ export default function CodeEditor() {
             <button onClick={handleCopy} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title="Copy code">
               {copied ? <Check className="w-4 h-4 text-accent" /> : <Copy className="w-4 h-4" />}
             </button>
-            <button onClick={handleRun} disabled={running} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:opacity-90 transition-opacity disabled:opacity-50 glow-primary">
+            <button onClick={() => handleRun()} disabled={running} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:opacity-90 transition-opacity disabled:opacity-50 glow-primary">
               <Play className="w-4 h-4" />
               {running ? "Compiling..." : "Run"}
             </button>
