@@ -25,24 +25,27 @@ export default function InteractiveTerminal({
   const [currentInput, setCurrentInput] = useState("");
   const [collectedInputs, setCollectedInputs] = useState<string[]>([]);
   const [showCursor, setShowCursor] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+
   const prevOutputRef = useRef("");
   const prevErrorRef = useRef("");
 
-  // Reset on new run
+  // ✅ Reset on run
   useEffect(() => {
     if (running) {
       setLines([{ type: "info", text: "⏳ Compiling & executing..." }]);
-      setShowCursor(false);
       setCurrentInput("");
       setCollectedInputs([]);
+      setShowCursor(false);
+
       prevOutputRef.current = "";
       prevErrorRef.current = "";
     }
   }, [running]);
 
-  // Handle error
+  // ✅ Handle error
   useEffect(() => {
     if (!running && error && error !== prevErrorRef.current) {
       prevErrorRef.current = error;
@@ -51,59 +54,70 @@ export default function InteractiveTerminal({
     }
   }, [error, running]);
 
-  // Handle output changes
- useEffect(() => {
-  if (running || !output || output === prevOutputRef.current) return;
-  prevOutputRef.current = output;
+  // ✅ Handle output (DIFF BASED)
+  useEffect(() => {
+    if (running || !output) return;
 
-  const outputText = output === "(no output)" ? "" : output;
+    let newText = output;
 
-  const newLines: TerminalLine[] = outputText
-    .split("\n")
-    .map((l) => ({ type: "output" as const, text: l }));
+    // 🔥 Only take NEW part (important fix)
+    if (output.startsWith(prevOutputRef.current)) {
+      newText = output.slice(prevOutputRef.current.length);
+    }
 
-  setLines((prev) => [...prev, ...newLines]); // ✅ append instead of replace
+    prevOutputRef.current = output;
 
-  if (needsInput) {
-    setShowCursor(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  } else {
-    setShowCursor(false);
+    if (!newText) return;
 
-    setLines((prev) => [
-      ...prev,
-      { type: "info", text: "✅ Program finished successfully" },
-    ]);
-  }
-}, [output, needsInput, running]);
+    const newLines: TerminalLine[] = newText
+      .split("\n")
+      .filter((l) => l !== "")
+      .map((l) => ({ type: "output" as const, text: l }));
 
-  // Auto-scroll
+    setLines((prev) => [...prev, ...newLines]);
+
+    if (needsInput) {
+      setShowCursor(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setShowCursor(false);
+
+      setLines((prev) => [
+        ...prev,
+        { type: "info", text: "✅ Program finished successfully" },
+      ]);
+    }
+  }, [output, needsInput, running]);
+
+  // ✅ Auto scroll
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [lines, showCursor]);
 
+  // ✅ Handle input
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && currentInput !== "") {
-      const inputValue = currentInput;
-      const newInputs = [...collectedInputs, inputValue];
-      setCollectedInputs(newInputs);
+    if (e.key === "Enter") {
+      const inputValue = currentInput.trim();
+      if (!inputValue) return;
 
-      // Append user input to lines visually
       setLines((prev) => [
         ...prev,
         { type: "input", text: inputValue },
       ]);
 
+      const newInputs = [...collectedInputs, inputValue];
+      setCollectedInputs(newInputs);
+
       setCurrentInput("");
       setShowCursor(false);
 
-      // Re-run with all collected inputs
       onSubmitInput(newInputs.join("\n"));
     }
   };
 
+  // ✅ Clear terminal
   const handleClear = () => {
     setLines([]);
     setCollectedInputs([]);
@@ -115,7 +129,8 @@ export default function InteractiveTerminal({
 
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-[#1a1a2e]">
-      {/* Terminal header */}
+      
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#16213e] border-b border-[#0f3460]">
         <div className="flex items-center gap-2">
           {error ? (
@@ -123,26 +138,31 @@ export default function InteractiveTerminal({
           ) : (
             <Terminal className="w-4 h-4 text-green-400" />
           )}
-          <span className="text-xs font-mono font-bold text-[#e0e0e0]">Output</span>
+          <span className="text-xs font-mono font-bold text-[#e0e0e0]">
+            Output
+          </span>
         </div>
+
         {lines.length > 0 && (
           <button
             onClick={handleClear}
-            className="px-3 py-1 text-xs font-mono border border-[#0f3460] rounded hover:bg-[#1a1a3e] transition-colors text-[#999]"
+            className="px-3 py-1 text-xs font-mono border border-[#0f3460] rounded hover:bg-[#1a1a3e] text-[#999]"
           >
             Clear
           </button>
         )}
       </div>
 
-      {/* Terminal body */}
+      {/* Body */}
       <div
         ref={terminalRef}
         className="flex-1 px-4 py-3 font-mono text-sm overflow-auto cursor-text"
         onClick={() => showCursor && inputRef.current?.focus()}
       >
         {lines.length === 0 && !running ? (
-          <span className="text-[#555] text-xs">Run your code to see output here...</span>
+          <span className="text-[#555] text-xs">
+            Run your code to see output here...
+          </span>
         ) : (
           <>
             {lines.map((line, i) => (
@@ -162,32 +182,28 @@ export default function InteractiveTerminal({
               </div>
             ))}
 
-            {/* Inline blinking cursor input */}
+            {/* Input */}
             {showCursor && (
-              <div className="flex items-center mt-0">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={currentInput}
-                  onChange={(e) => setCurrentInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="bg-transparent outline-none border-none text-cyan-300 font-mono text-sm flex-1 caret-green-400"
-                  style={{ caretColor: "#4ade80" }}
-                  autoFocus
-                  spellCheck={false}
-                />
-              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="bg-transparent outline-none border-none text-cyan-300 font-mono text-sm w-full"
+                autoFocus
+              />
             )}
 
-            {/* Blinking cursor when idle and showing cursor */}
-            {!showCursor && !running && lines.length > 0 && lines[lines.length - 1]?.type !== "info" && (
-              <div className="h-4 mt-1">
-                <span className="inline-block w-[2px] h-4 bg-green-400 animate-pulse" />
-              </div>
+            {/* Cursor */}
+            {!showCursor && !running && lines.length > 0 && (
+              <span className="inline-block w-[2px] h-4 bg-green-400 animate-pulse mt-1" />
             )}
 
             {running && (
-              <span className="text-[#888] animate-pulse">⏳ Compiling & executing...</span>
+              <div className="text-[#888] animate-pulse mt-2">
+                ⏳ Compiling & executing...
+              </div>
             )}
           </>
         )}
