@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Terminal, Copy, Check, AlertTriangle, Save, FolderOpen, Trash2, X } from "lucide-react";
+import { Play, Copy, Check, Save, FolderOpen, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import InteractiveTerminal from "./InteractiveTerminal";
 
 const DEFAULT_CODE = `#include <iostream>
 using namespace std;
@@ -36,7 +37,7 @@ export default function CodeEditor() {
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [stdinInput, setStdinInput] = useState("");
+  const [needsInput, setNeedsInput] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
   const [saveTitle, setSaveTitle] = useState("");
@@ -56,10 +57,43 @@ export default function CodeEditor() {
     if (showSaved) fetchSaved();
   }, [showSaved, user]);
 
-  const handleRun = async () => {
+  const detectNeedsInput = (code: string) => {
+    return /\b(cin\s*>>|scanf\s*\(|getline\s*\(|gets\s*\()/.test(code);
+  };
+
+  const handleRun = async (stdinInput = "") => {
     setRunning(true);
     setOutput("");
     setError("");
+    setNeedsInput(false);
+
+    // If code needs input and no stdin provided yet, show input prompt
+    const codeNeedsInput = detectNeedsInput(code);
+    if (codeNeedsInput && !stdinInput) {
+      // Run with empty stdin first - the output will show prompts
+      // Then wait for user input
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
+          body: { code, stdin: "" },
+        });
+        if (fnError) {
+          setError(`Error: ${fnError.message}`);
+        } else if (data.compileError) {
+          setError(data.compileError);
+        } else {
+          // Show partial output (prompts) and wait for input
+          const partialOutput = data.output || "";
+          setOutput(partialOutput);
+          setNeedsInput(true);
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to execute code");
+      } finally {
+        setRunning(false);
+      }
+      return;
+    }
+
     try {
       const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
         body: { code, stdin: stdinInput },
@@ -81,6 +115,11 @@ export default function CodeEditor() {
     } finally {
       setRunning(false);
     }
+  };
+
+  const handleTerminalInput = (stdin: string) => {
+    // Re-run with the collected stdin
+    handleRun(stdin);
   };
 
   const handleSave = async () => {
@@ -141,7 +180,7 @@ export default function CodeEditor() {
             <button onClick={handleCopy} className="p-2 text-muted-foreground hover:text-foreground transition-colors" title="Copy code">
               {copied ? <Check className="w-4 h-4 text-accent" /> : <Copy className="w-4 h-4" />}
             </button>
-            <button onClick={handleRun} disabled={running} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:opacity-90 transition-opacity disabled:opacity-50 glow-primary">
+            <button onClick={() => handleRun()} disabled={running} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-md font-mono text-sm hover:opacity-90 transition-opacity disabled:opacity-50 glow-primary">
               <Play className="w-4 h-4" />
               {running ? "Compiling..." : "Run"}
             </button>
@@ -196,52 +235,13 @@ export default function CodeEditor() {
           </div>
 
           {/* Output - Right */}
-          <div className="flex-1 min-w-0 flex flex-col bg-code-bg">
-            <div className="flex items-center justify-between px-4 py-2 bg-secondary/50 border-b border-border">
-              <div className="flex items-center gap-2">
-                {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
-                <span className="text-xs font-mono font-bold text-foreground">Output</span>
-              </div>
-              {(output || error) && (
-                <button
-                  onClick={() => { setOutput(""); setError(""); }}
-                  className="px-3 py-1 text-xs font-mono border border-border rounded hover:bg-secondary transition-colors text-muted-foreground"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Output content */}
-            <div className="flex-1 px-4 py-3 font-mono text-sm overflow-auto">
-              {running ? (
-                <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
-              ) : error ? (
-                <pre className="whitespace-pre-wrap text-destructive">{error}</pre>
-              ) : output ? (
-                <>
-                  <pre className="whitespace-pre-wrap text-accent">{output}</pre>
-                  <p className="text-accent/60 mt-4 text-xs">=== Code Execution Successful ===</p>
-                </>
-              ) : (
-                <span className="text-muted-foreground text-xs">Run your code to see output here...</span>
-              )}
-            </div>
-
-            {/* Stdin input - always visible at bottom */}
-            <div className="border-t border-border px-3 py-2 bg-secondary/30">
-              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">
-                Standard Input (stdin)
-              </label>
-              <textarea
-                value={stdinInput}
-                onChange={(e) => setStdinInput(e.target.value)}
-                placeholder="Type input values here (one per line)... e.g.&#10;5&#10;Alice&#10;25"
-                className="w-full bg-secondary/50 text-foreground placeholder:text-muted-foreground/50 outline-none font-mono text-xs rounded p-2 resize-none border border-border focus:border-primary caret-primary"
-                rows={3}
-              />
-            </div>
-          </div>
+          <InteractiveTerminal
+            running={running}
+            onSubmitInput={handleTerminalInput}
+            output={output}
+            error={error}
+            needsInput={needsInput}
+          />
         </div>
       </div>
 
