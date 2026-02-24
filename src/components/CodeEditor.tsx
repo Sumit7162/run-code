@@ -57,10 +57,43 @@ export default function CodeEditor() {
     if (showSaved) fetchSaved();
   }, [showSaved, user]);
 
-  const handleRun = async () => {
+  const detectNeedsInput = (code: string) => {
+    return /\b(cin\s*>>|scanf\s*\(|getline\s*\(|gets\s*\()/.test(code);
+  };
+
+  const handleRun = async (stdinInput = "") => {
     setRunning(true);
     setOutput("");
     setError("");
+    setNeedsInput(false);
+
+    // If code needs input and no stdin provided yet, show input prompt
+    const codeNeedsInput = detectNeedsInput(code);
+    if (codeNeedsInput && !stdinInput) {
+      // Run with empty stdin first - the output will show prompts
+      // Then wait for user input
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
+          body: { code, stdin: "" },
+        });
+        if (fnError) {
+          setError(`Error: ${fnError.message}`);
+        } else if (data.compileError) {
+          setError(data.compileError);
+        } else {
+          // Show partial output (prompts) and wait for input
+          const partialOutput = data.output || "";
+          setOutput(partialOutput);
+          setNeedsInput(true);
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to execute code");
+      } finally {
+        setRunning(false);
+      }
+      return;
+    }
+
     try {
       const { data, error: fnError } = await supabase.functions.invoke("run-cpp", {
         body: { code, stdin: stdinInput },
@@ -82,6 +115,11 @@ export default function CodeEditor() {
     } finally {
       setRunning(false);
     }
+  };
+
+  const handleTerminalInput = (stdin: string) => {
+    // Re-run with the collected stdin
+    handleRun(stdin);
   };
 
   const handleSave = async () => {
