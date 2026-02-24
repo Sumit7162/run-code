@@ -52,29 +52,30 @@ export default function InteractiveTerminal({
   }, [error, running]);
 
   // Handle output changes
-  useEffect(() => {
-    if (running || !output || output === prevOutputRef.current) return;
-    prevOutputRef.current = output;
+ useEffect(() => {
+  if (running || !output || output === prevOutputRef.current) return;
+  prevOutputRef.current = output;
 
-    const outputText = output === "(no output)" ? "" : output;
-    const outputLines: TerminalLine[] = outputText
-      .split("\n")
-      .map((l) => ({ type: "output" as const, text: l }));
+  const outputText = output === "(no output)" ? "" : output;
 
-    if (needsInput) {
-      // Show output (prompts) and enable inline input cursor
-      setLines(outputLines);
-      setShowCursor(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      // Final output - show with success message
-      if (outputText) {
-        outputLines.push({ type: "info", text: "✅ Program finished successfully" });
-      }
-      setLines(outputLines.length > 0 ? outputLines : [{ type: "output", text: "(no output)" }]);
-      setShowCursor(false);
-    }
-  }, [output, needsInput, running]);
+  const newLines: TerminalLine[] = outputText
+    .split("\n")
+    .map((l) => ({ type: "output" as const, text: l }));
+
+  setLines((prev) => [...prev, ...newLines]); // ✅ append instead of replace
+
+  if (needsInput) {
+    setShowCursor(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  } else {
+    setShowCursor(false);
+
+    setLines((prev) => [
+      ...prev,
+      { type: "info", text: "✅ Program finished successfully" },
+    ]);
+  }
+}, [output, needsInput, running]);
 
   // Auto-scroll
   useEffect(() => {
