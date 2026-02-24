@@ -235,52 +235,13 @@ export default function CodeEditor() {
           </div>
 
           {/* Output - Right */}
-          <div className="flex-1 min-w-0 flex flex-col bg-code-bg">
-            <div className="flex items-center justify-between px-4 py-2 bg-secondary/50 border-b border-border">
-              <div className="flex items-center gap-2">
-                {error ? <AlertTriangle className="w-4 h-4 text-destructive" /> : <Terminal className="w-4 h-4 text-primary" />}
-                <span className="text-xs font-mono font-bold text-foreground">Output</span>
-              </div>
-              {(output || error) && (
-                <button
-                  onClick={() => { setOutput(""); setError(""); }}
-                  className="px-3 py-1 text-xs font-mono border border-border rounded hover:bg-secondary transition-colors text-muted-foreground"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Output content */}
-            <div className="flex-1 px-4 py-3 font-mono text-sm overflow-auto">
-              {running ? (
-                <span className="text-muted-foreground animate-pulse">Compiling & executing...</span>
-              ) : error ? (
-                <pre className="whitespace-pre-wrap text-destructive">{error}</pre>
-              ) : output ? (
-                <>
-                  <pre className="whitespace-pre-wrap text-accent">{output}</pre>
-                  <p className="text-accent/60 mt-4 text-xs">=== Code Execution Successful ===</p>
-                </>
-              ) : (
-                <span className="text-muted-foreground text-xs">Run your code to see output here...</span>
-              )}
-            </div>
-
-            {/* Stdin input - always visible at bottom */}
-            <div className="border-t border-border px-3 py-2 bg-secondary/30">
-              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">
-                Standard Input (stdin)
-              </label>
-              <textarea
-                value={stdinInput}
-                onChange={(e) => setStdinInput(e.target.value)}
-                placeholder="Type input values here (one per line)... e.g.&#10;5&#10;Alice&#10;25"
-                className="w-full bg-secondary/50 text-foreground placeholder:text-muted-foreground/50 outline-none font-mono text-xs rounded p-2 resize-none border border-border focus:border-primary caret-primary"
-                rows={3}
-              />
-            </div>
-          </div>
+          <InteractiveTerminal
+            running={running}
+            onSubmitInput={handleTerminalInput}
+            output={output}
+            error={error}
+            needsInput={needsInput}
+          />
         </div>
       </div>
 
