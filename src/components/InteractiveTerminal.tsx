@@ -54,13 +54,23 @@ export default function InteractiveTerminal({
     }
   }, [error, running]);
 
+  // ✅ Handle needsInput (show cursor even without output)
+  useEffect(() => {
+    if (running) return;
+    if (needsInput) {
+      setShowCursor(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [needsInput, running]);
+
   // ✅ Handle output (DIFF BASED)
   useEffect(() => {
-    if (running || !output) return;
+    if (running) return;
+    if (!output && !needsInput) return;
 
     let newText = output;
 
-    // 🔥 Only take NEW part (important fix)
+    // 🔥 Only take NEW part
     if (output.startsWith(prevOutputRef.current)) {
       newText = output.slice(prevOutputRef.current.length);
     }
@@ -76,12 +86,8 @@ export default function InteractiveTerminal({
 
     setLines((prev) => [...prev, ...newLines]);
 
-    if (needsInput) {
-      setShowCursor(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
+    if (!needsInput) {
       setShowCursor(false);
-
       setLines((prev) => [
         ...prev,
         { type: "info", text: "✅ Program finished successfully" },
